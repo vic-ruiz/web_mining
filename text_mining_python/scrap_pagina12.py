@@ -26,7 +26,7 @@ from scrapy.http import HtmlResponse
 # ── Configuración de secciones ────────────────────────────────────────────────
 
 # Directorio base donde se crearán las subcarpetas (relativo a este script)
-BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "noticias")
+BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "raw")
 
 # Clave = segmento en la URL de Página 12 / Valor = carpeta local de destino
 SECCIONES = {
