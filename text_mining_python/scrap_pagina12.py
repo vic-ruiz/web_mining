@@ -71,11 +71,13 @@ class Pagina12Spider(scrapy.Spider):
     name = "crawler_pagina12"
     allowed_domains = ["www.pagina12.com.ar", "pagina12.com.ar"]
 
-    # Regex: artículos con ID numérico de ≥6 dígitos seguido de guion.
+    # Regex: artículos con formato de fecha /YYYY/MM/DD/slug/
     # Ejemplos válidos:
-    #   https://www.pagina12.com.ar/289430-nombre-de-la-nota
-    #   https://www.pagina12.com.ar/1234567-otra-nota-larga
-    ARTICLE_REGEX = re.compile(r"^https://www\.pagina12\.com\.ar/\d{6,}-")
+    #   https://www.pagina12.com.ar/2026/05/08/caputo-defendio-el-rigi
+    #   https://www.pagina12.com.ar/2025/11/03/otra-nota
+    ARTICLE_REGEX = re.compile(
+        r"^https://www\.pagina12\.com\.ar/20\d\d/\d{2}/\d{2}/.+"
+    )
 
     custom_settings = {
         "USER_AGENT": (
@@ -83,6 +85,14 @@ class Pagina12Spider(scrapy.Spider):
             "AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/120.0.0.0 Safari/537.36"
         ),
+        # Headers necesarios para que el servidor devuelva el HTML completo
+        "DEFAULT_REQUEST_HEADERS": {
+            "Accept": (
+                "text/html,application/xhtml+xml,"
+                "application/xml;q=0.9,*/*;q=0.8"
+            ),
+            "Accept-Language": "es-AR,es;q=0.9",
+        },
         "LOG_ENABLED": True,
         "LOG_LEVEL": "INFO",
         "ROBOTSTXT_OBEY": False,
