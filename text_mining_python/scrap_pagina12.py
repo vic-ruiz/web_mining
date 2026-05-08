@@ -1,92 +1,201 @@
 # -*- coding: utf-8 -*-
-import scrapy
-from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import CrawlSpider, Rule
-from urllib.parse import urlparse
-from scrapy.utils.response import open_in_browser
-from scrapy.crawler import CrawlerProcess
-from urllib import parse
-from os import path
-from scrapy.http.response.html import HtmlResponse
+"""
+Spider de Scrapy para descargar noticias de Página 12.
+Secciones: Economía, Sociedad, El Mundo, El País.
+
+Ejecutar con:
+    python scrap_pagina12.py
+
+Estructura de salida:
+    noticias/
+    ├── economia/    → .html de cada noticia
+    ├── sociedad/
+    ├── elmundo/
+    └── elpais/
+"""
+
+import os
+import re
 import multiprocessing
-from typing import List
+
+import scrapy
+from scrapy.crawler import CrawlerProcess
+from scrapy.http import HtmlResponse
 
 
+# ── Configuración de secciones ────────────────────────────────────────────────
 
-class NewsSpider(CrawlSpider):
+# Directorio base donde se crearán las subcarpetas (relativo a este script)
+BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "noticias")
 
-    DOWNLOAD_HANDLERS = {
-    'https': 'my.custom.downloader.handler.https.HttpsDownloaderIgnoreCNError',
-    }
+# Clave = segmento en la URL de Página 12 / Valor = carpeta local de destino
+SECCIONES = {
+    "economia": "economia",
+    "sociedad": "sociedad",
+    "el-mundo":  "elmundo",
+    "el-pais":   "elpais",
+}
 
-    name = 'crawler_pagina12'
-    # solo descargar paginas desde estos dominios
-    allowed_domains = ('www.pagina12.com.ar','pagina12.com.ar')
-    
-    rules = (
-        # Ejemplo de regla de scrapping:
-        # solo bajar las paginas cuya url incluye "/secciones", pero no aquellas cuya url include "/catamarca12" o "/dialogo".
-        # Ud. tiene que modificar esta regla para bajar solo indice + noticias de pagina 12.
-        # scrappy normaliza las urls para no descargarlas 2 veces la misma pagina con distinta url.
-        Rule(LinkExtractor(allow=r'.+/secciones/.+',deny='.+(/catamarca12|/dialogo).+',
-               deny_domains=['auth.pagina12.com.ar'], canonicalize=True,
-               deny_extensions=['7z', '7zip', 'apk', 'bz2', 'cdr,' 'dmg', 'ico,' 'iso,' 'tar', 'tar.gz','pdf','docx', 'jpg', 'png', 'css', 'js']),
-               callback='parse_response', follow=True),
-     )
-     
-    # configuracion de scrappy, ver https://docs.scrapy.org/en/latest/topics/settings.html
-    # la var de clase debe llamarse "custom settings"
+
+# ── Estrategia de salto de páginas ────────────────────────────────────────────
+
+def generar_paginas(pages_per_block: int = 5,
+                    pages_to_skip: int = 20,
+                    num_blocks: int = 6) -> list:
+    """
+    Genera los números de página a descargar usando una estrategia de saltos
+    para cubrir un arco temporal amplio sin descargar miles de páginas.
+
+    Ejemplo con valores por defecto:
+        Bloque 1 →  páginas  1-5
+        Bloque 2 →  páginas 26-30   (salto de 20)
+        Bloque 3 →  páginas 51-55
+        Bloque 4 →  páginas 76-80
+        Bloque 5 →  páginas 101-105
+        Bloque 6 →  páginas 126-130
+    Total: 30 páginas × 4 secciones = 120 requests de índice.
+    """
+    paginas = []
+    page = 1
+    for _ in range(num_blocks):
+        for offset in range(pages_per_block):
+            paginas.append(page + offset)
+        page += pages_per_block + pages_to_skip
+    return paginas
+
+
+# ── Spider principal ──────────────────────────────────────────────────────────
+
+class Pagina12Spider(scrapy.Spider):
+
+    name = "crawler_pagina12"
+    allowed_domains = ["www.pagina12.com.ar", "pagina12.com.ar"]
+
+    # Regex: artículos con ID numérico de ≥6 dígitos seguido de guion.
+    # Ejemplos válidos:
+    #   https://www.pagina12.com.ar/289430-nombre-de-la-nota
+    #   https://www.pagina12.com.ar/1234567-otra-nota-larga
+    ARTICLE_REGEX = re.compile(r"^https://www\.pagina12\.com\.ar/\d{6,}-")
+
     custom_settings = {
-      # mentir el user agent
-     'USER_AGENT': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
-     'LOG_ENABLED': True,
-     'LOG_LEVEL': 'INFO',
-      # no descargar paginas mas alla de 1 link desde la pagina de origen
-     'DEPTH_LIMIT': 2,
-      # ignorar robots.txt (que feo eh)
-     'ROBOTSTXT_OBEY': False,
-      # esperar entre 0.5*DOWNLOAD_DELAY y 1.5*DOWNLOAD_DELAY segundo entre descargas
-     'DOWNLOAD_DELAY': 1,
-     'RANDOMIZE_DOWNLOAD_DELAY': True
+        "USER_AGENT": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "LOG_ENABLED": True,
+        "LOG_LEVEL": "INFO",
+        "ROBOTSTXT_OBEY": False,
+        # Espera base entre requests; Scrapy la multiplica aleatoriamente
+        # entre 0.5× y 1.5× para no parecer un bot predecible.
+        "DOWNLOAD_DELAY": 1.5,
+        "RANDOMIZE_DOWNLOAD_DELAY": True,
+        # Reintentos mínimos para no saturar el servidor ante errores 5xx
+        "RETRY_TIMES": 2,
+        # Scrapy no sigue links por cuenta propia; lo controlamos nosotros
+        "DEPTH_LIMIT": 0,
     }
 
-    def __init__(self, save_pages_in_dir='.', *args, **kwargs):
-          super().__init__(*args, **kwargs)
-          # guardar el directorio en donde vamos a descargar las paginas
-          self.basedir = save_pages_in_dir
-    
-    def parse_response(self, response:HtmlResponse):
-          """
-          Este metodo es llamado por cada url que descarga Scrappy.
-          response.url contiene la url de la pagina,
-          response.body contiene los bytes del contenido de la pagina.
-          """
-          # el nombre de archivo es lo que esta luego de la ultima "/"
-          html_filename = path.join(self.basedir,parse.quote(response.url[response.url.rfind("/")+1:]))
-          if not html_filename.endswith(".html"):
-              html_filename+=".html"
-          print("URL:",response.url, "Pagina guardada en:", html_filename)
-          # sabemos que pagina 12 usa encoding utf8
-          with open(html_filename, "wt") as html_file:
-              html_file.write(response.body.decode("utf-8"))
-          
+    def __init__(self, base_dir: str = BASE_DIR, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.base_dir = base_dir
+        self._crear_directorios()
 
-def start_crawler(page_number:int, save_pages_in_dir:str, start_urls:List[str]):
-    crawler = CrawlerProcess()
-    crawler.crawl(NewsSpider, save_pages_in_dir = save_pages_in_dir, start_urls = start_urls)
-    crawler.start()
+    def _crear_directorios(self):
+        """Crea las 4 carpetas de destino si no existen."""
+        for carpeta in SECCIONES.values():
+            ruta = os.path.join(self.base_dir, carpeta)
+            os.makedirs(ruta, exist_ok=True)
+            self.logger.info(f"Directorio listo: {ruta}")
+
+    # ── Generación de requests iniciales ─────────────────────────────────────
+
+    def start_requests(self):
+        """
+        Genera los requests al índice de cada sección usando la estrategia
+        de saltos, en lugar de descargar todas las páginas en secuencia.
+        """
+        paginas = generar_paginas(
+            pages_per_block=5,
+            pages_to_skip=20,
+            num_blocks=6,
+        )
+        self.logger.info(f"Páginas a descargar por sección: {paginas}")
+
+        for seccion, carpeta in SECCIONES.items():
+            for nro in paginas:
+                url = (
+                    f"https://www.pagina12.com.ar/secciones/{seccion}"
+                    f"?page={nro}"
+                )
+                yield scrapy.Request(
+                    url,
+                    callback=self.parse_indice,
+                    cb_kwargs={"carpeta": carpeta},
+                )
+
+    # ── Parseo del índice de sección ─────────────────────────────────────────
+
+    def parse_indice(self, response: HtmlResponse, carpeta: str):
+        """
+        Lee una página de índice de sección y genera un request
+        por cada link de noticia que cumpla con el patrón regex.
+        """
+        links_encontrados = 0
+
+        for href in response.css("a::attr(href)").getall():
+            url_absoluta = response.urljoin(href)
+            if self.ARTICLE_REGEX.match(url_absoluta):
+                links_encontrados += 1
+                yield scrapy.Request(
+                    url_absoluta,
+                    callback=self.parse_noticia,
+                    cb_kwargs={"carpeta": carpeta},
+                )
+
+        self.logger.info(
+            f"[{carpeta}] {response.url} "
+            f"→ {links_encontrados} noticias encontradas"
+        )
+
+    # ── Guardado de la noticia ────────────────────────────────────────────────
+
+    def parse_noticia(self, response: HtmlResponse, carpeta: str):
+        """
+        Guarda el HTML completo de la noticia en la carpeta correspondiente.
+        El nombre del archivo es el slug final de la URL.
+        Encoding: UTF-8 (Página 12 usa este encoding de forma consistente).
+        """
+        # Extraer el slug de la URL, ej. "289430-nombre-de-la-nota"
+        slug = response.url.rstrip("/").split("/")[-1]
+        if not slug.endswith(".html"):
+            slug += ".html"
+
+        ruta_archivo = os.path.join(self.base_dir, carpeta, slug)
+
+        with open(ruta_archivo, "wt", encoding="utf-8") as f:
+            f.write(response.text)
+
+        self.logger.info(f"[{carpeta}] Guardada: {slug}")
+
+
+# ── Punto de entrada ──────────────────────────────────────────────────────────
+
+def run_spider(base_dir: str):
+    """Lanza el spider dentro de un CrawlerProcess de Scrapy."""
+    process = CrawlerProcess()
+    process.crawl(Pagina12Spider, base_dir=base_dir)
+    process.start()
 
 
 if __name__ == "__main__":
-   DIR_EN_DONDE_GUARDAR_PAGINAS="/un/directorio/en/donde/guardar/paginas"
-   if not path.exists(DIR_EN_DONDE_GUARDAR_PAGINAS):
-         print(f"ERROR: Directory {DIR_EN_DONDE_GUARDAR_PAGINAS} does not exist.")
-         exit(-1)
-   for page_number in range(1,3):
-         # Ejecutar al crawler en un proceso separado, sino al 
-         # volver a arrancar con la prox pagina de indice de noticias,
-         # el crawler de scrappy da error. Esto es un fix para un problema particular de scrappy.
-         process = multiprocessing.Process(target=start_crawler, args=(page_number, DIR_EN_DONDE_GUARDAR_PAGINAS, ['http://www.pagina12.com.ar/']))
-         process.start()
-         process.join()
+    os.makedirs(BASE_DIR, exist_ok=True)
 
+    # El reactor de Twisted (que usa Scrapy internamente) no puede reiniciarse
+    # en el mismo proceso. Correr el spider en un proceso separado permite
+    # lanzarlo sin restricciones y es el patrón recomendado para scripts locales.
+    p = multiprocessing.Process(target=run_spider, args=(BASE_DIR,))
+    p.start()
+    p.join()
+
+    print(f"\nListo. Noticias guardadas en: {BASE_DIR}")
