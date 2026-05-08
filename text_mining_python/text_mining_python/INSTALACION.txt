@@ -1,0 +1,21 @@
+INSTALACION:
+============
+Paso 1:
+Si no tiene instalado Python 3, descargue python 3 de https://www.anaconda.com/distribution/#download-section
+Paso 2:
+Luego en la linea de comando, instale las siguientes bibliotecas usando pip install:
+bs4
+gensim
+nltk
+scikit-learn
+
+P.ej. 
+    pip install bs4
+
+CONTENIDO:
+==========
+* El script de_html_a_tabla.py transforma un grupo de paginas html agrupadas en 1 directorio por categoria en un dataset para entrenar.
+* El script entrenar_y_evalular.py lee el resultado de de_html_a_tabla.py, entrena y evalua con cross-validation.
+* El script ejemplo_de_uso_w2v.py es un ejemplo de como leer un embedding de word2vec ya entrenado y como transformar una lista de documentos en una matriz utilizando el embedding.
+* word2vec.py contiene a MeanEmbeddingVectorizer,  un vectorizador compatible con sklearn que recibe una secuencia de tokens y retorna un vector, usando vectores de tokens de word2vec.
+  Puede descargar un embedding de word2vec ya entrenado en español desde https://github.com/aitoralmeida/spanish_word2vec, o uno mejor, mas grande desde https://github.com/dccuchile/spanish-word-embeddings ; descarguelo en formato "vec". Este modelo es mas grande, y una vez cargado, utiliza unos 3 GB de RAM.

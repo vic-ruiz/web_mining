@@ -1,0 +1,6 @@
+pandas
+joblib
+scikit-learn
+bs4
+gensim
+nltk

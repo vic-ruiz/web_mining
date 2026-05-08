@@ -1,0 +1,4 @@
+scrapy==2.7.1
+typing
+Twisted==22.10.0
+pyOpenSSL==22.0.0
