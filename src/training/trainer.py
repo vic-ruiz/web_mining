@@ -54,7 +54,6 @@ def _get_models() -> dict[str, Any]:
         "tfidf_lr": build_tfidf_pipeline(
             LogisticRegression(
                 C=5.0, max_iter=1000,
-                multi_class="multinomial",
                 solver="lbfgs",
                 random_state=cfg.RANDOM_STATE,
             )
@@ -89,7 +88,6 @@ def _get_embedding_models(X_emb: np.ndarray) -> dict[str, Any]:
     models: dict[str, Any] = {
         "emb_lr": LogisticRegression(
             C=5.0, max_iter=1000,
-            multi_class="multinomial",
             solver="lbfgs",
             random_state=cfg.RANDOM_STATE,
         ),
