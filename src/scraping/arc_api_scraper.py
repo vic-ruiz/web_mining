@@ -12,6 +12,7 @@ This is far more reliable than HTML scraping:
 """
 
 import json
+import random
 import time
 import urllib.parse
 from datetime import datetime, timezone
@@ -38,6 +39,8 @@ HEADERS    = {
     ),
     "Accept": "application/json",
     "Accept-Language": "es-AR,es;q=0.9",
+    # Referer makes requests look like they originate from browsing the site
+    "Referer": "https://www.pagina12.com.ar/economia",
 }
 
 # Map from arc section path → our category label
@@ -72,14 +75,25 @@ def _fetch_page(
     retries: int = 3,
 ) -> Optional[dict]:
     url = _build_url(section, page)
+    headers = {**HEADERS, "Referer": f"{BASE_URL}{section}"}
     for attempt in range(retries):
         try:
-            r = session.get(url, headers=HEADERS, timeout=20)
+            r = session.get(url, headers=headers, timeout=20)
+            if r.status_code == 429:
+                wait = 30 + random.uniform(0, 15)
+                log.warning("Rate limited (429). Waiting %.0fs before retry…", wait)
+                time.sleep(wait)
+                continue
             r.raise_for_status()
             return r.json()
+        except requests.exceptions.HTTPError as e:
+            if attempt < retries - 1:
+                time.sleep(5 * (attempt + 1))
+            else:
+                log.warning("Failed %s page=%d after %d attempts: %s", section, page, retries, e)
         except Exception as e:
             if attempt < retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(3)
             else:
                 log.warning("Failed %s page=%d: %s", section, page, e)
     return None
@@ -199,7 +213,9 @@ def scrape_section(
             break
 
         if i < len(pages) - 1 and page != 1:
-            time.sleep(delay)
+            # Random jitter ±30% so requests don't arrive at fixed intervals
+            jitter = delay * random.uniform(0.7, 1.3)
+            time.sleep(jitter)
 
     log.info("[%s] Collected %d articles", category, len(records))
     return records[:target_articles]
