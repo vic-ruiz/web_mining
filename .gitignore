@@ -7,8 +7,7 @@ data/interim/
 data/processed/
 data/splits/
 models/
-reports/figures/
-reports/metrics/
+# reports tracked intentionally
 text_mining_python/noticias/
 *.joblib
 *.npy
