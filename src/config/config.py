@@ -24,7 +24,7 @@ SECTIONS: dict[str, str] = {
 
 SCRAPER_PAGES_PER_BLOCK = 5
 SCRAPER_PAGES_TO_SKIP   = 20
-SCRAPER_NUM_BLOCKS      = 8   # 40 pages × 4 sections = 160 index requests
+SCRAPER_NUM_BLOCKS      = 17  # 85 pages × 4 sections → ~1.000 articles/class
 SCRAPER_DOWNLOAD_DELAY  = 1.5
 
 # ── Parsing ───────────────────────────────────────────────────────────────────
