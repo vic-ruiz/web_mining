@@ -58,8 +58,12 @@ CV_FOLDS     = 5
 RANDOM_STATE = 42
 
 # ── Temporal split ────────────────────────────────────────────────────────────
-# Train on articles before cutoff, test on articles after
-TEMPORAL_CUTOFF_MONTHS = 3   # last N months → test set
+# Train on articles before cutoff, test on articles after.
+# The assignment asks for *more than one* temporal cut, so we evaluate several
+# horizons: a short, medium and long test window. Each cut trains only on
+# articles strictly older than the cutoff and tests on the newer ones.
+TEMPORAL_CUTOFF_MONTHS = 3        # default single cut (kept for backward compat)
+TEMPORAL_CUTS_MONTHS   = [3, 6, 9]  # multiple horizons for temporal validation
 
 # ── Category labels ───────────────────────────────────────────────────────────
 CATEGORIES = ["economia", "elpais", "sociedad", "elmundo"]

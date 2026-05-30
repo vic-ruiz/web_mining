@@ -21,8 +21,8 @@ log = get_logger("run_scraper")
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Scrape Página 12 via Arc API")
-    parser.add_argument("--articles-per-class", type=int, default=1000,
-                        help="Target number of articles per category (default: 1000)")
+    parser.add_argument("--articles-per-class", type=int, default=1500,
+                        help="Target number of articles per category (default: 1500)")
     parser.add_argument("--delay", type=float, default=1.0,
                         help="Delay between API requests in seconds (default: 1.0)")
     parser.add_argument("--out", type=Path, default=INTERIM_FILE,

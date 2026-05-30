@@ -1,47 +1,64 @@
-# Web Mining TP1 — Clasificación de Noticias Página 12
+# Web Mining TP1 — Clasificación de Noticias de Página 12
 
-Trabajo Práctico 1 de Web Mining. Pipeline completo de scraping, procesamiento NLP y clasificación automática de noticias del diario [Página 12](https://www.pagina12.com.ar) en cuatro categorías: **Economía**, **El País**, **Sociedad** y **El Mundo**.
+Trabajo Práctico 1 de Web Mining. Pipeline completo y reproducible de *crawling*,
+procesamiento NLP y clasificación automática de noticias del diario
+[Página 12](https://www.pagina12.com.ar) en cuatro secciones: **Economía**,
+**El País**, **Sociedad** y **El Mundo**.
+
+> 📄 **Informe completo (decisiones, metodología y evaluación):**
+> [`informe/informe_tp1.pdf`](informe/informe_tp1.pdf) — generado desde
+> [`informe/informe_tp1.tex`](informe/informe_tp1.tex).
 
 ---
 
 ## Resultados
 
-### Cross-Validation 5-fold estratificado (3.941 artículos)
+### Validación cruzada 5-fold estratificada (5.999 artículos)
 
 | Modelo | Accuracy | Macro F1 |
 |--------|:--------:|:--------:|
-| **TF-IDF + LinearSVC** | **0.908 ± 0.011** | **0.908 ± 0.011** |
-| Stacking (LR meta-learner) | 0.902 ± 0.007 | 0.902 ± 0.007 |
-| TF-IDF + Logistic Regression | 0.901 ± 0.010 | 0.902 ± 0.010 |
-| Soft Voting (TF-IDF+LR ∪ BoW+LR) | 0.896 ± 0.011 | 0.896 ± 0.011 |
-| BoW + Logistic Regression | 0.892 ± 0.010 | 0.893 ± 0.011 |
-| BoW + Naive Bayes | 0.887 ± 0.011 | 0.887 ± 0.011 |
-| Sentence Embeddings + LR | 0.808 ± 0.011 | 0.809 ± 0.011 |
+| **TF-IDF + LinearSVC** | **0.904 ± 0.011** | **0.903 ± 0.011** |
+| Ensamble (stacking, meta-LR) | 0.901 ± 0.009 | 0.901 ± 0.009 |
+| TF-IDF + Regresión Logística | 0.900 ± 0.010 | 0.900 ± 0.010 |
+| Ensamble (soft voting) | 0.890 ± 0.009 | 0.890 ± 0.009 |
+| BoW + Regresión Logística | 0.885 ± 0.007 | 0.885 ± 0.007 |
+| BoW + Naive Bayes (baseline) | 0.883 ± 0.006 | 0.882 ± 0.006 |
+| Sentence Embeddings + LR (alternativa moderna) | 0.818 ± 0.005 | 0.818 ± 0.005 |
 
-### Validación Temporal (mejor modelo: TF-IDF + LinearSVC)
+### Validación temporal — 3 cortes (mejor modelo: TF-IDF + LinearSVC)
 
-| Conjunto | Período | Artículos |
-|----------|---------|----------:|
-| Train | sept 2022 → feb 2026 | 3.481 |
-| Test | feb 2026 → may 2026 | 460 |
+Entrena con las noticias anteriores a la fecha de corte y testea con las
+posteriores. La consigna pide *"idealmente, más de un corte temporal"*:
 
-**Accuracy: 0.874 — Macro F1: 0.878** (caída de solo −3% respecto a CV)
+| Corte | Fecha corte | Train | Test | Accuracy | Macro F1 |
+|------:|-------------|------:|-----:|:--------:|:--------:|
+| 3m | 2026-02-28 | 5.185 | 814 | 0.853 | 0.858 |
+| 6m | 2025-11-29 | 4.403 | 1.596 | 0.848 | 0.853 |
+| 9m | 2025-08-29 | 3.570 | 2.429 | 0.846 | 0.849 |
+| **Promedio** | | | | **0.849 ± 0.003** | **0.853 ± 0.004** |
+
+La caída CV → temporal es **moderada (~5 pts) pero muy estable** entre los tres
+cortes, incluso al crecer el test de 814 a 2.429 noticias: el modelo generaliza a
+noticias futuras y el resultado no es un accidente de un período puntual.
 
 ---
 
 ## Dataset
 
-- **Fuente**: Página 12 via Arc Publishing JSON API
-- **Artículos**: 3.941 (≈ 1.000 por categoría)
-- **Rango temporal**: septiembre 2022 → mayo 2026
-- **Mediana de tokens por artículo**: 382
+- **Fuente**: Página 12 vía API JSON de Arc Publishing
+- **Artículos**: 5.999 (≈ 1.500 por sección, balanceado)
+- **Rango temporal**: mayo 2023 → mayo 2026
+- **Mediana de tokens por artículo**: 389
 
-| Categoría | Artículos |
-|-----------|----------:|
-| Sociedad | 1.000 |
-| El Mundo | 1.000 |
-| El País | 987 |
-| Economía | 954 |
+| Sección | Artículos |
+|---------|----------:|
+| Economía | 1.500 |
+| El País | 1.500 |
+| Sociedad | 1.500 |
+| El Mundo | 1.499 |
+
+Una **muestra de HTML crudo** (12 ejemplos por sección, bien etiquetados) se entrega
+en [`muestra_html/`](muestra_html/) como pide la consigna.
 
 ---
 
@@ -49,6 +66,15 @@ Trabajo Práctico 1 de Web Mining. Pipeline completo de scraping, procesamiento 
 
 ```
 web_mining/
+├── informe/
+│   ├── informe_tp1.tex   # documento con todas las decisiones (LaTeX)
+│   ├── informe_tp1.pdf   # ← informe compilado
+│   ├── tabla_cv.tex      # tablas autogeneradas desde las métricas
+│   └── tabla_temporal.tex
+│
+├── muestra_html/         # entregable: 12 HTML reales por sección
+│   ├── economia/  elpais/  sociedad/  elmundo/
+│
 ├── data/
 │   ├── interim/          # articles.parquet (texto crudo estructurado)
 │   └── processed/        # dataset.parquet  (texto preprocesado)
@@ -56,27 +82,29 @@ web_mining/
 ├── models/               # modelos entrenados (.joblib)
 │
 ├── reports/
-│   ├── figures/          # gráficos generados
+│   ├── figures/          # gráficos + matrices de confusión (CV y temporal)
 │   ├── metrics/          # cv_results.json, temporal_validation.json
-│   └── report.md         # reporte final autogenerado
+│   └── report.md         # reporte Markdown autogenerado
 │
 ├── src/
-│   ├── config/config.py          # configuración centralizada
-│   ├── scraping/arc_api_scraper.py  # scraper via Arc Publishing API
-│   ├── parsing/html_parser.py    # parser HTML → DataFrame (fallback)
-│   ├── preprocessing/text_cleaner.py  # pipeline NLP español
+│   ├── config/config.py              # configuración centralizada
+│   ├── scraping/arc_api_scraper.py   # scraper vía Arc Publishing API
+│   ├── parsing/html_parser.py        # parser HTML → DataFrame (fallback)
+│   ├── preprocessing/text_cleaner.py # pipeline NLP español
 │   ├── features/
-│   │   ├── tfidf_features.py     # TF-IDF + BoW pipelines
-│   │   └── embedding_features.py # sentence-transformers
-│   ├── training/trainer.py       # entrenamiento + CV + ensembles
-│   ├── evaluation/evaluator.py   # métricas, validación temporal, plots
+│   │   ├── tfidf_features.py         # TF-IDF + BoW pipelines
+│   │   └── embedding_features.py     # sentence-transformers
+│   ├── training/trainer.py           # entrenamiento + CV + ensembles
+│   ├── evaluation/evaluator.py       # métricas, validación temporal multi-corte, plots
 │   └── utils/logging_utils.py
 │
 ├── scripts/
-│   ├── run_scraper.py    # punto de entrada scraping
-│   ├── parse_html.py     # preprocesamiento NLP
-│   ├── train.py          # entrenamiento + evaluación
-│   └── generate_report.py
+│   ├── run_scraper.py          # crawling (Arc API)
+│   ├── parse_html.py           # preprocesamiento NLP
+│   ├── train.py                # entrenamiento + evaluación
+│   ├── generate_report.py      # reporte Markdown
+│   ├── make_latex_tables.py    # tablas LaTeX desde métricas
+│   └── download_sample_html.py # muestra de HTML por sección
 │
 ├── text_mining_python/   # código original de la cátedra (referencia)
 └── requirements.txt
@@ -92,7 +120,7 @@ cd web_mining
 
 pip install -r requirements.txt
 
-# macOS: LightGBM necesita libomp via Homebrew ARM
+# macOS (Apple Silicon): LightGBM necesita libomp
 /opt/homebrew/bin/brew install libomp
 ```
 
@@ -101,61 +129,74 @@ pip install -r requirements.txt
 ## Ejecución end-to-end
 
 ```bash
-# 1. Scraping (~13 minutos, ~4.000 artículos)
-python scripts/run_scraper.py --articles-per-class 1000 --delay 2.0
+# 1. Scraping (~15 min, ~6.000 artículos)
+python3 scripts/run_scraper.py --articles-per-class 1500 --delay 1.0
 
 # 2. Preprocesamiento NLP
-python scripts/parse_html.py
+python3 scripts/parse_html.py
 
-# 3. Entrenamiento + evaluación (~20 minutos)
-python scripts/train.py
+# 3. Entrenamiento + evaluación (CV + validación temporal multi-corte)
+python3 scripts/train.py
 
-# 4. Reporte Markdown
-python scripts/generate_report.py
+# 4. Reporte Markdown + tablas LaTeX
+python3 scripts/generate_report.py
+python3 scripts/make_latex_tables.py
+
+# 5. Muestra de HTML por sección (entregable)
+python3 scripts/download_sample_html.py --per-class 12
+
+# 6. Compilar el informe
+cd informe && pdflatex informe_tp1.tex && pdflatex informe_tp1.tex
 ```
 
 ---
 
-## Decisiones de diseño
+## Decisiones de diseño (resumen)
 
-### Por qué Arc Publishing API en vez de Scrapy
+El detalle completo está en el [informe](informe/informe_tp1.pdf). En síntesis:
 
-Página 12 usa Arc Publishing CMS. La paginación vía `?page=N` en las URLs de sección es ignorada por el servidor (renderizado JavaScript). El sitio expone una API JSON interna:
+### Por qué la API de Arc Publishing en vez del crawler de HTML
+
+Página 12 usa el CMS Arc Publishing y resuelve la paginación de secciones con
+JavaScript: el parámetro `?page=N` de las URLs es **ignorado por el servidor** (todas
+las páginas devuelven el mismo bloque de ~23 notas). El sitio expone una API JSON
+interna con paginación real:
 
 ```
 GET /pf/api/v3/content/fetch/p12-section
-    ?query={"page":N,"size":15,"primarySection":"/economia","arc-site":"pagina12"}
+    ?query={"page":N,"size":15,"primarySection":"/economia",...}
 ```
 
-Esta API devuelve el cuerpo completo del artículo estructurado, con paginación real (667 páginas por sección, ~10.000 artículos cada una). Ventajas sobre HTML scraping:
-- Sin necesidad de parsear HTML ni CSS selectors frágiles
-- Texto limpio directamente desde el CMS
-- 4x más rápido (JSON liviano vs HTML de 300KB)
+Devuelve el cuerpo completo y estructurado de cada nota (~666 páginas por sección).
+La consigna habilita "cualquier herramienta, recurso y técnica", así que esta opción
+respeta el espíritu del TP y mejora la calidad del dato. Para evitar **sesgo
+temporal**, el crawler distribuye las páginas a lo largo de toda la historia de cada
+sección (no solo las recientes).
 
-### Por qué TF-IDF supera a sentence-transformers
+### Por qué TF-IDF supera a los sentence-transformers
 
-La tarea es clasificación por **dominio léxico**, no por semántica profunda. Las categorías se distinguen por vocabulario específico:
+La tarea es de **dominio léxico**: las secciones se distinguen por vocabulario
+específico (Economía: "dólar", "inflación", "BCRA"; El Mundo: "ONU", "Gaza",
+"Ucrania"). TF-IDF captura esas señales; los embeddings de MiniLM las comprimen en un
+espacio semántico continuo y además truncan a 128 tokens artículos de mediana 389
+tokens. Por eso el baseline clásico, bien ajustado, gana a la alternativa moderna en
+esta tarea concreta — un hallazgo en sí mismo.
 
-- *Economía*: "dólar", "inflación", "BCRA", "FMI", "tasa"
-- *El Mundo*: "ONU", "OTAN", "Gaza", "Trump", "Ucrania"
-- *El País*: "Milei", "Congreso", "Senado", "provincia", "elecciones"
-- *Sociedad*: "salud", "educación", "vivienda", "género", "derechos"
+### Clases difíciles (análisis de la matriz de confusión)
 
-TF-IDF captura exactamente estas señales léxicas. Los embeddings de `paraphrase-multilingual-MiniLM-L12-v2` comprimen esa información en un espacio semántico continuo donde "inflación" y "pobreza" quedan próximas aunque pertenezcan a categorías distintas.
+- **El País** es la sección más difícil (recall ≈85% en CV, 74% en el corte temporal
+  de 6 meses): su contenido político-nacional se solapa con Sociedad y Economía.
+- El par **El País ↔ Sociedad** es el más confundido (~7% en ambos sentidos, casi
+  simétrico).
+- La confusión **El País → Economía** (~5.4%) supera a la inversa (~3.6%): las notas
+  de política económica tienden a etiquetarse como Economía.
+- **El Mundo** y **Economía** son las mejor separadas (recall ≈95% y ≈94%).
 
-### Por qué el ensemble no supera al modelo individual
+### Por qué el ensamble no mejora al mejor modelo
 
-El stacking reduce la varianza (±0.007 vs ±0.011) pero no mejora el promedio. Cuando los modelos base cometen errores similares — notas de política económica confundidas entre *El País* y *Economía* —, el meta-learner no tiene señal complementaria para corregir. El ensemble agrega valor cuando los errores de los modelos base son **independientes**; aquí están correlacionados.
-
-### Validación temporal
-
-Se entrena con artículos anteriores a una fecha de corte y se evalúa con artículos posteriores, simulando el uso real del modelo. La caída de solo −3% en Macro F1 indica que el vocabulario político-económico de Página 12 es estable en el tiempo: el modelo generaliza bien a noticias futuras.
-
----
-
-## Análisis de clases difíciles
-
-Las categorías más confundibles son **El País** y **Economía**. Notas sobre política económica ("el gobierno anunció medidas para contener la inflación") contienen vocabulario de ambas categorías simultáneamente. Este es el error sistemático principal del pipeline — no un defecto del modelo sino una ambigüedad real en los datos.
+El stacking reduce la varianza entre folds pero no la media: los modelos base cometen
+**errores correlacionados** (todos confunden los mismos pares), así que el
+meta-learner no encuentra señal complementaria.
 
 ---
 
@@ -164,31 +205,27 @@ Las categorías más confundibles son **El País** y **Economía**. Notas sobre 
 | Componente | Tecnología |
 |---|---|
 | Scraping | `requests` + Arc Publishing API |
-| Parsing HTML | `beautifulsoup4`, `lxml` |
 | Procesamiento de datos | `pandas`, `pyarrow` |
 | NLP / Stemming | `nltk` (Snowball español) |
 | Features clásicas | `scikit-learn` (TF-IDF, CountVectorizer) |
 | Features modernas | `sentence-transformers` (MiniLM-L12-v2) |
-| Clasificadores | `scikit-learn` (LR, LinearSVC, VotingClassifier, StackingClassifier) |
-| Ensemble de árboles | `lightgbm` |
+| Clasificadores | `scikit-learn` (LR, LinearSVC, Voting, Stacking) |
 | Visualización | `matplotlib`, `seaborn` |
-| Persistencia de modelos | `joblib` |
+| Persistencia | `joblib` |
+| Informe | LaTeX |
 
 ---
 
 ## Figuras
 
-### Distribución por categoría
-![Distribución](reports/figures/class_distribution.png)
-
-### Artículos por mes y categoría
+### Artículos por mes y sección
 ![Timeline](reports/figures/articles_over_time.png)
-
-### Distribución de longitud (tokens)
-![Tokens](reports/figures/token_distribution.png)
 
 ### Comparación de modelos (CV)
 ![Modelos](reports/figures/model_comparison.png)
 
-### Confusion matrix — validación temporal
-![Confusion Matrix](reports/figures/cm_temporal_tfidf_svc.png)
+### Matriz de confusión — CV 5-fold (mejor modelo)
+![CM CV](reports/figures/cm_cv_tfidf_svc.png)
+
+### Matriz de confusión — validación temporal (corte 6m)
+![CM Temporal](reports/figures/cm_temporal_tfidf_svc_6m.png)

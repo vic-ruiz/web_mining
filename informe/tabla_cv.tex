@@ -1,0 +1,13 @@
+\begin{tabular}{lcc}
+\toprule
+\textbf{Modelo} & \textbf{Accuracy} & \textbf{Macro F1} \\
+\midrule
+\textbf{TF-IDF + LinearSVC} & \textbf{0.904 $\pm$ 0.011} & \textbf{0.903 $\pm$ 0.011} \\
+Ensamble (stacking) & 0.901 $\pm$ 0.009 & 0.901 $\pm$ 0.009 \\
+TF-IDF + Reg. Logística & 0.900 $\pm$ 0.010 & 0.900 $\pm$ 0.010 \\
+Ensamble (soft voting) & 0.890 $\pm$ 0.009 & 0.890 $\pm$ 0.009 \\
+BoW + Reg. Logística & 0.885 $\pm$ 0.007 & 0.885 $\pm$ 0.007 \\
+BoW + Naive Bayes & 0.883 $\pm$ 0.006 & 0.882 $\pm$ 0.006 \\
+Sentence embeddings + LR & 0.818 $\pm$ 0.005 & 0.818 $\pm$ 0.005 \\
+\bottomrule
+\end{tabular}

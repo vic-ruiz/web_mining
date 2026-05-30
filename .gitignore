@@ -13,3 +13,10 @@ text_mining_python/noticias/
 *.npy
 *.parquet
 .DS_Store
+
+# LaTeX build artifacts (el PDF sí se versiona)
+informe/*.aux
+informe/*.log
+informe/*.out
+informe/*.toc
+informe/*.synctex.gz

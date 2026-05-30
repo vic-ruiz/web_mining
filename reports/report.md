@@ -1,7 +1,7 @@
 # TP1 Web Mining — Clasificación de Noticias Página 12
 
-**Generado:** 2026-05-09 11:13  
-**Dataset:** 3941 artículos  
+**Generado:** 2026-05-29 21:18  
+**Dataset:** 5999 artículos  
 **Categorías:** Economía, El País, Sociedad, El Mundo
 
 ---
@@ -10,13 +10,13 @@
 
 | Categoría | Artículos |
 |-----------|----------:|
-| economia | 954 |
-| elmundo | 1000 |
-| elpais | 987 |
-| sociedad | 1000 |
+| economia | 1500 |
+| elmundo | 1499 |
+| elpais | 1500 |
+| sociedad | 1500 |
 
-**Rango temporal:** 2022-09-30 → 2026-05-09  
-**Mediana de tokens por artículo:** 382
+**Rango temporal:** 2023-05-23 → 2026-05-29  
+**Mediana de tokens por artículo:** 389
 
 ---
 
@@ -24,40 +24,34 @@
 
 | Modelo | Accuracy | Macro F1 | Weighted F1 |
 |--------|:--------:|:--------:|:-----------:|
-| tfidf_svc | 0.908±0.011 | 0.908±0.011 | 0.908±0.011 |
-| ensemble_stacking | 0.902±0.007 | 0.902±0.007 | 0.902±0.007 |
-| tfidf_lr | 0.901±0.010 | 0.902±0.010 | 0.901±0.010 |
-| ensemble_voting | 0.896±0.011 | 0.896±0.011 | 0.896±0.011 |
-| bow_lr | 0.892±0.010 | 0.893±0.011 | 0.892±0.010 |
-| bow_nb | 0.887±0.011 | 0.887±0.011 | 0.886±0.011 |
-| emb_lr | 0.808±0.011 | 0.809±0.011 | 0.808±0.011 |
+| tfidf_svc | 0.904±0.011 | 0.903±0.011 | 0.903±0.011 |
+| ensemble_stacking | 0.901±0.009 | 0.901±0.009 | 0.901±0.009 |
+| tfidf_lr | 0.900±0.010 | 0.900±0.010 | 0.900±0.010 |
+| ensemble_voting | 0.890±0.009 | 0.890±0.009 | 0.890±0.009 |
+| bow_lr | 0.885±0.007 | 0.885±0.007 | 0.885±0.007 |
+| bow_nb | 0.883±0.006 | 0.882±0.006 | 0.882±0.006 |
+| emb_lr | 0.818±0.005 | 0.818±0.005 | 0.818±0.005 |
 
 > **Mejor modelo:** `tfidf_svc` (por Macro F1)
 
 ---
 
-## 3. Validación Temporal
+## 3. Validación Temporal (varios cortes)
 
 Entrenamiento en artículos históricos, test en los más recientes.
 Esto simula el desempeño real del modelo ante noticias futuras.
+Se evalúan **3 cortes** (3, 6 y 9 meses) para descartar que un
+buen resultado sea un accidente de un período particular.
 
-| Métrica | Valor |
-|---------|------:|
-| Modelo  | tfidf_svc |
-| Train   | 3481 artículos |
-| Test    | 460 artículos |
-| Accuracy | 0.874 |
-| Macro F1 | 0.878 |
-| Weighted F1 | 0.873 |
+**Modelo:** `tfidf_svc`
 
-### F1 por categoría (temporal)
+| Corte | Fecha corte | Train | Test | Accuracy | Macro F1 | Weighted F1 |
+|------:|-------------|------:|-----:|:--------:|:--------:|:-----------:|
+| 3m | 2026-02-28 | 5185 | 814 | 0.853 | 0.858 | 0.852 |
+| 6m | 2025-11-29 | 4403 | 1596 | 0.848 | 0.853 | 0.847 |
+| 9m | 2025-08-29 | 3570 | 2429 | 0.846 | 0.849 | 0.845 |
 
-| Categoría | Precision | Recall | F1 |
-|-----------|:---------:|:------:|:--:|
-| economia | 0.805 | 0.986 | 0.886 |
-| elmundo | 0.855 | 0.947 | 0.899 |
-| elpais | 0.904 | 0.805 | 0.852 |
-| sociedad | 0.896 | 0.860 | 0.878 |
+> **Promedio entre cortes:** Macro F1 = 0.853 ± 0.004  ·  Accuracy = 0.849 ± 0.003
 
 ---
 
@@ -90,7 +84,15 @@ Las categorías más confundibles suelen ser:
 
 ![class_distribution](reports/figures/class_distribution.png)
 
+![cm_cv_tfidf_svc](reports/figures/cm_cv_tfidf_svc.png)
+
 ![cm_temporal_tfidf_svc](reports/figures/cm_temporal_tfidf_svc.png)
+
+![cm_temporal_tfidf_svc_3m](reports/figures/cm_temporal_tfidf_svc_3m.png)
+
+![cm_temporal_tfidf_svc_6m](reports/figures/cm_temporal_tfidf_svc_6m.png)
+
+![cm_temporal_tfidf_svc_9m](reports/figures/cm_temporal_tfidf_svc_9m.png)
 
 ![model_comparison](reports/figures/model_comparison.png)
 

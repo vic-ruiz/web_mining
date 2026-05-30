@@ -1,30 +1,105 @@
 {
   "model": "tfidf_svc",
-  "train_size": 3481,
-  "test_size": 460,
-  "accuracy": 0.8739,
-  "macro_f1": 0.8785,
-  "weighted_f1": 0.8731,
-  "per_class": {
-    "economia": {
-      "precision": 0.8046,
-      "recall": 0.9859,
-      "f1": 0.8861
+  "cuts": {
+    "3m": {
+      "months": 3,
+      "cutoff_date": "2026-02-28",
+      "train_size": 5185,
+      "test_size": 814,
+      "accuracy": 0.8526,
+      "macro_f1": 0.8581,
+      "weighted_f1": 0.8519,
+      "per_class": {
+        "economia": {
+          "precision": 0.7688,
+          "recall": 0.9685,
+          "f1": 0.8571
+        },
+        "elmundo": {
+          "precision": 0.8601,
+          "recall": 0.9248,
+          "f1": 0.8913
+        },
+        "elpais": {
+          "precision": 0.8755,
+          "recall": 0.7967,
+          "f1": 0.8342
+        },
+        "sociedad": {
+          "precision": 0.8782,
+          "recall": 0.8228,
+          "f1": 0.8496
+        }
+      }
     },
-    "elmundo": {
-      "precision": 0.8554,
-      "recall": 0.9467,
-      "f1": 0.8987
+    "6m": {
+      "months": 6,
+      "cutoff_date": "2025-11-29",
+      "train_size": 4403,
+      "test_size": 1596,
+      "accuracy": 0.8484,
+      "macro_f1": 0.853,
+      "weighted_f1": 0.847,
+      "per_class": {
+        "economia": {
+          "precision": 0.753,
+          "recall": 0.9693,
+          "f1": 0.8476
+        },
+        "elmundo": {
+          "precision": 0.8615,
+          "recall": 0.9273,
+          "f1": 0.8932
+        },
+        "elpais": {
+          "precision": 0.9044,
+          "recall": 0.7387,
+          "f1": 0.8132
+        },
+        "sociedad": {
+          "precision": 0.8541,
+          "recall": 0.8625,
+          "f1": 0.8583
+        }
+      }
     },
-    "elpais": {
-      "precision": 0.9041,
-      "recall": 0.8049,
-      "f1": 0.8516
-    },
-    "sociedad": {
-      "precision": 0.8958,
-      "recall": 0.86,
-      "f1": 0.8776
+    "9m": {
+      "months": 9,
+      "cutoff_date": "2025-08-29",
+      "train_size": 3570,
+      "test_size": 2429,
+      "accuracy": 0.846,
+      "macro_f1": 0.8488,
+      "weighted_f1": 0.8448,
+      "per_class": {
+        "economia": {
+          "precision": 0.7515,
+          "recall": 0.9746,
+          "f1": 0.8486
+        },
+        "elmundo": {
+          "precision": 0.8186,
+          "recall": 0.9227,
+          "f1": 0.8675
+        },
+        "elpais": {
+          "precision": 0.9048,
+          "recall": 0.7433,
+          "f1": 0.8161
+        },
+        "sociedad": {
+          "precision": 0.8714,
+          "recall": 0.8546,
+          "f1": 0.8629
+        }
+      }
     }
+  },
+  "summary": {
+    "macro_f1_mean": 0.8533,
+    "macro_f1_std": 0.0038,
+    "accuracy_mean": 0.849,
+    "accuracy_std": 0.0027,
+    "n_cuts": 3
   }
 }

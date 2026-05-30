@@ -147,6 +147,94 @@ def run_temporal_validation(
     return result
 
 
+def run_temporal_validation_multi(
+    df: pd.DataFrame,
+    model_name: str = "tfidf_svc",
+    cuts_months: Optional[list[int]] = None,
+) -> dict:
+    """
+    Run temporal validation at several cutoffs (e.g. last 3, 6 and 9 months).
+
+    The assignment asks for *more than one* temporal cut so we can check
+    whether a single result was an accident. For each horizon we retrain the
+    model on the older articles and test on the newer ones, and we render a
+    confusion matrix for every cut.
+
+    Returns a dict keyed by "<N>m" with the per-cut metrics, plus a summary.
+    """
+    from sklearn.preprocessing import LabelEncoder
+
+    cuts = cuts_months or cfg.TEMPORAL_CUTS_MONTHS
+    model_path = cfg.MODELS_DIR / f"{model_name}.joblib"
+    if not model_path.exists():
+        log.error("Model not found: %s", model_path)
+        return {}
+
+    le = joblib.load(cfg.MODELS_DIR / "label_encoder.joblib")
+    cfg.FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+
+    out: dict = {"model": model_name, "cuts": {}}
+    for months in cuts:
+        train_df, test_df = temporal_split(df, cutoff_months=months)
+        if len(test_df) < 20:
+            log.warning("Cut %dm: test set too small (%d), skipping", months, len(test_df))
+            continue
+
+        model = joblib.load(model_path)
+        train_X = train_df[cfg.TEXT_COL].tolist()
+        test_X  = test_df[cfg.TEXT_COL].tolist()
+        train_y = le.transform(train_df[cfg.LABEL_COL])
+        test_y  = le.transform(test_df[cfg.LABEL_COL])
+
+        model.fit(train_X, train_y)
+        pred = model.predict(test_X)
+
+        report = classification_report(test_y, pred, target_names=le.classes_,
+                                       output_dict=True)
+        cutoff_date = (df[cfg.DATE_COL].max() - pd.DateOffset(months=months)).date()
+        out["cuts"][f"{months}m"] = {
+            "months":        months,
+            "cutoff_date":   str(cutoff_date),
+            "train_size":    len(train_df),
+            "test_size":     len(test_df),
+            "accuracy":      round(accuracy_score(test_y, pred), 4),
+            "macro_f1":      round(f1_score(test_y, pred, average="macro"), 4),
+            "weighted_f1":   round(f1_score(test_y, pred, average="weighted"), 4),
+            "per_class": {
+                cls: {
+                    "precision": round(report[cls]["precision"], 4),
+                    "recall":    round(report[cls]["recall"], 4),
+                    "f1":        round(report[cls]["f1-score"], 4),
+                }
+                for cls in le.classes_
+            },
+        }
+
+        plot_confusion_matrix(
+            test_y, pred, list(le.classes_),
+            title=f"Validación temporal {months}m (corte {cutoff_date}) — {model_name}",
+            save_path=cfg.FIGURES_DIR / f"cm_temporal_{model_name}_{months}m.png",
+        )
+        log.info("[Temporal %dm] %s  acc=%.3f  macro_f1=%.3f  (train=%d test=%d)",
+                 months, model_name,
+                 out["cuts"][f"{months}m"]["accuracy"],
+                 out["cuts"][f"{months}m"]["macro_f1"],
+                 len(train_df), len(test_df))
+
+    # Summary across cuts (mean ± std of macro F1)
+    if out["cuts"]:
+        f1s = [c["macro_f1"] for c in out["cuts"].values()]
+        accs = [c["accuracy"] for c in out["cuts"].values()]
+        out["summary"] = {
+            "macro_f1_mean": round(float(np.mean(f1s)), 4),
+            "macro_f1_std":  round(float(np.std(f1s)), 4),
+            "accuracy_mean": round(float(np.mean(accs)), 4),
+            "accuracy_std":  round(float(np.std(accs)), 4),
+            "n_cuts":        len(f1s),
+        }
+    return out
+
+
 # ── Cross-validation confusion matrix ────────────────────────────────────────
 
 def cv_confusion_matrix(

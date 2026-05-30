@@ -176,7 +176,10 @@ def scrape_section(
 
     total  = data.get("count", 0)
     max_p  = max(1, total // PAGE_SIZE)
-    needed = max(1, -(-target_articles // PAGE_SIZE))   # ceil division
+    # Some articles per page are dropped (short body, duplicates, non-news), so
+    # the effective yield is ~12/15. Oversample pages to actually reach target.
+    EFFECTIVE_YIELD = 12
+    needed = max(1, -(-target_articles // EFFECTIVE_YIELD))   # ceil division
     needed = min(needed, max_p)
 
     # Space pages evenly across full history for good temporal coverage
@@ -222,7 +225,7 @@ def scrape_section(
 
 
 def scrape_all(
-    target_per_class: int = 1000,
+    target_per_class: int = 1500,
     delay: float = 1.0,
 ) -> pd.DataFrame:
     session = requests.Session()
@@ -254,7 +257,7 @@ def scrape_all(
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--articles-per-class", type=int, default=1000)
+    parser.add_argument("--articles-per-class", type=int, default=1500)
     parser.add_argument("--delay", type=float, default=1.0)
     parser.add_argument("--out", type=Path, default=INTERIM_FILE)
     args = parser.parse_args()

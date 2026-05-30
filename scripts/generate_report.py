@@ -80,31 +80,36 @@ def build_report(cv: dict, temporal: dict, df: pd.DataFrame) -> str:
         "",
         "---",
         "",
-        "## 3. Validación Temporal",
+        "## 3. Validación Temporal (varios cortes)",
         "",
         "Entrenamiento en artículos históricos, test en los más recientes.",
         "Esto simula el desempeño real del modelo ante noticias futuras.",
+        "Se evalúan **3 cortes** (3, 6 y 9 meses) para descartar que un",
+        "buen resultado sea un accidente de un período particular.",
         "",
     ]
 
-    if temporal:
+    cuts = temporal.get("cuts", {}) if temporal else {}
+    if cuts:
         lines += [
-            f"| Métrica | Valor |",
-            f"|---------|------:|",
-            f"| Modelo  | {temporal.get('model', '?')} |",
-            f"| Train   | {temporal.get('train_size', '?')} artículos |",
-            f"| Test    | {temporal.get('test_size', '?')} artículos |",
-            f"| Accuracy | {temporal.get('accuracy', 0):.3f} |",
-            f"| Macro F1 | {temporal.get('macro_f1', 0):.3f} |",
-            f"| Weighted F1 | {temporal.get('weighted_f1', 0):.3f} |",
+            f"**Modelo:** `{temporal.get('model', '?')}`",
             "",
-            "### F1 por categoría (temporal)",
-            "",
-            "| Categoría | Precision | Recall | F1 |",
-            "|-----------|:---------:|:------:|:--:|",
+            "| Corte | Fecha corte | Train | Test | Accuracy | Macro F1 | Weighted F1 |",
+            "|------:|-------------|------:|-----:|:--------:|:--------:|:-----------:|",
         ]
-        for cls, m in temporal.get("per_class", {}).items():
-            lines.append(f"| {cls} | {m['precision']:.3f} | {m['recall']:.3f} | {m['f1']:.3f} |")
+        for tag, c in cuts.items():
+            lines.append(
+                f"| {tag} | {c['cutoff_date']} | {c['train_size']} | {c['test_size']} "
+                f"| {c['accuracy']:.3f} | {c['macro_f1']:.3f} | {c['weighted_f1']:.3f} |"
+            )
+        s = temporal.get("summary", {})
+        if s:
+            lines += [
+                "",
+                f"> **Promedio entre cortes:** Macro F1 = "
+                f"{s['macro_f1_mean']:.3f} ± {s['macro_f1_std']:.3f}  ·  "
+                f"Accuracy = {s['accuracy_mean']:.3f} ± {s['accuracy_std']:.3f}",
+            ]
     else:
         lines.append("_Resultados temporales no disponibles._")
 
